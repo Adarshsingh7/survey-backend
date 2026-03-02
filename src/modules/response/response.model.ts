@@ -8,6 +8,7 @@ interface ResponseComponent {
 interface SurveyResponseType {
 	surveyId: Schema.Types.ObjectId;
 	components: [ResponseComponent];
+	email: string;
 }
 
 const ResponseComponentSchema = new Schema<ResponseComponent>({
@@ -19,6 +20,7 @@ const ResponseSchema = new Schema<SurveyResponseType>(
 	{
 		surveyId: { type: Schema.Types.ObjectId, ref: 'Survey' },
 		components: { type: [ResponseComponentSchema], default: [] },
+		email: { type: String },
 	},
 	{
 		timestamps: true,
