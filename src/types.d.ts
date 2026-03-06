@@ -28,6 +28,8 @@ interface SurveyType {
 	title: string;
 	description: string;
 	authRequired: boolean;
+	fontStyle: string;
+	primaryColor: string;
 	status: 'drafted' | 'live' | 'completed';
 	user: Types.ObjectId;
 	_id?: string;

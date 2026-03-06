@@ -55,6 +55,8 @@ const SurveySchema = new Schema<SurveyType>(
 		authRequired: { type: Boolean, default: false },
 		status: { type: String },
 		components: { type: [SurveyComponentSchema], default: [] },
+		fontStyle: { type: String, default: 'modern' },
+		primaryColor: { type: String, default: 'blue' },
 		user: {
 			type: Schema.Types.ObjectId,
 			ref: 'User',
