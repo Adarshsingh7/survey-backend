@@ -32,13 +32,13 @@ const SurveyComponentSchema = new Schema<SurveyComponent>({
 	},
 	name: { type: String, required: true },
 	icon: { type: String, required: true },
-	min: { type: Number },
-	max: { type: Number },
-	label: { type: String },
+	min: { type: Schema.Types.Mixed },
+	max: { type: Schema.Types.Mixed },
+	label: { type: String, trim: true },
 	required: { type: Boolean, default: false },
-	placeholder: { type: String },
-	description: { type: String },
-	options: [{ type: String }],
+	placeholder: { type: String, trim: true },
+	description: { type: String, trim: true },
+	options: [{ type: String, trim: true }],
 	imageUrl: { type: String },
 	items: [{ type: String }],
 	validation: {
@@ -50,8 +50,8 @@ const SurveyComponentSchema = new Schema<SurveyComponent>({
 
 const SurveySchema = new Schema<SurveyType>(
 	{
-		title: { type: String, required: true },
-		description: { type: String },
+		title: { type: String, required: true, trim: true },
+		description: { type: String, trim: true },
 		authRequired: { type: Boolean, default: false },
 		status: { type: String },
 		components: { type: [SurveyComponentSchema], default: [] },

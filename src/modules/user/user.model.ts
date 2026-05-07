@@ -19,8 +19,10 @@ const userSchema = new Schema<UserType>(
 		},
 		phone: {
 			type: String,
-			minlength: [10, 'Minimum 10-digit phone number is required'],
-			maxlength: [13, 'Maximum 13-digit phone number is allowed'],
+			validate: {
+				validator: (v: string) => validator.isMobilePhone(v, 'any'),
+				message: 'Enter a valid mobile phone number',
+			},
 			unique: true,
 		},
 		photo: {

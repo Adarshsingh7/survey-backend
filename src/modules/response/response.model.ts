@@ -13,7 +13,7 @@ interface SurveyResponseType {
 
 const ResponseComponentSchema = new Schema<ResponseComponent>({
 	questionId: String,
-	answer: String,
+	answer: { type: String, trim: true },
 });
 
 const ResponseSchema = new Schema<SurveyResponseType>(

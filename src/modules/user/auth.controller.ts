@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 import User from '@/modules/user/user.model';
 import AppError from '@/utils/appError';
@@ -18,12 +19,86 @@ const signToken = (id: string) => {
 	return token;
 };
 
+type GoogleTokenInfoResponse = {
+	aud?: string;
+	email?: string;
+	email_verified?: string;
+	name?: string;
+	picture?: string;
+	sub?: string;
+};
+
+const fetchGoogleTokenInfo = async (
+	idToken: string,
+): Promise<GoogleTokenInfoResponse> => {
+	const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
+		idToken,
+	)}`;
+
+	const res = await fetch(url, { method: 'GET' });
+	if (!res.ok) {
+		throw new AppError('invalid google credential', 401);
+	}
+
+	return (await res.json()) as GoogleTokenInfoResponse;
+};
+
 export const signup = catchAsync(
 	async (req: Request, res: Response, next: NextFunction) => {
 		const newUser = await User.create(req.body);
 		const token = signToken(String(newUser._id));
 		res.status(201).json({
 			user: newUser,
+			token,
+		});
+	},
+);
+
+export const googleSignin = catchAsync(
+	async (req: Request, res: Response, next: NextFunction) => {
+		const credential = String(req.body?.credential || '');
+		if (!credential) return next(new AppError('credential is required', 400));
+
+		const expectedAudience = String(process.env.GOOGLE_CLIENT_ID || '');
+		if (!expectedAudience)
+			return next(new AppError('missing env GOOGLE_CLIENT_ID', 500));
+
+		const tokenInfo = await fetchGoogleTokenInfo(credential);
+		if (!tokenInfo?.email) return next(new AppError('google email missing', 401));
+		if (tokenInfo.aud !== expectedAudience)
+			return next(new AppError('invalid google audience', 401));
+		if (tokenInfo.email_verified !== 'true')
+			return next(new AppError('google email not verified', 401));
+
+		const role =
+			req.body?.role === 'teacher' || req.body?.role === 'student'
+				? req.body.role
+				: 'student';
+
+		let user = await User.findOne({ email: tokenInfo.email });
+
+		if (!user) {
+			const password = crypto.randomBytes(32).toString('hex');
+			user = await User.create({
+				name: tokenInfo.name || tokenInfo.email,
+				email: tokenInfo.email,
+				photo: tokenInfo.picture,
+				role,
+				isVerified: true,
+				isGoogleUser: true,
+				password,
+				passwordConfirm: password,
+			});
+		} else if (!user.isGoogleUser) {
+			user.isGoogleUser = true;
+			if (tokenInfo.picture) user.photo = tokenInfo.picture;
+			if (tokenInfo.name) user.name = tokenInfo.name;
+			await user.save({ validateBeforeSave: false });
+		}
+
+		const token = signToken(String(user._id));
+		res.status(200).json({
+			user,
 			token,
 		});
 	},
