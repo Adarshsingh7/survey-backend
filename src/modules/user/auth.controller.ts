@@ -75,7 +75,7 @@ export const googleSignin = catchAsync(
 				? req.body.role
 				: 'student';
 
-		let user = await User.findOne({ email: tokenInfo.email });
+		let user = await User.findOne({ email: tokenInfo.email, includeInactive: true } as any);
 
 		if (!user) {
 			const password = crypto.randomBytes(32).toString('hex');
@@ -89,11 +89,17 @@ export const googleSignin = catchAsync(
 				password,
 				passwordConfirm: password,
 			});
-		} else if (!user.isGoogleUser) {
-			user.isGoogleUser = true;
-			if (tokenInfo.picture) user.photo = tokenInfo.picture;
-			if (tokenInfo.name) user.name = tokenInfo.name;
-			await user.save({ validateBeforeSave: false });
+		} else {
+			if (!user.isActive) {
+				return next(new AppError('Your account has been disabled. Please contact support.', 401));
+			}
+
+			if (!user.isGoogleUser) {
+				user.isGoogleUser = true;
+				if (tokenInfo.picture) user.photo = tokenInfo.picture;
+				if (tokenInfo.name) user.name = tokenInfo.name;
+				await user.save({ validateBeforeSave: false });
+			}
 		}
 
 		const token = signToken(String(user._id));
@@ -107,9 +113,13 @@ export const googleSignin = catchAsync(
 export const signin = catchAsync(
 	async (req: Request, res: Response, next: NextFunction) => {
 		const { email, password } = req.body;
-		const user = await User.findOne({ email }).select('+password');
+		const user = await User.findOne({ email, includeInactive: true } as any).select('+password');
 		if (!user || !(await user.correctPassword(password, user.password)))
 			return next(new AppError('incorrect email or password', 401));
+
+		if (!user.isActive) {
+			return next(new AppError('Your account has been disabled. Please contact support.', 401));
+		}
 		const token = signToken(String(user._id));
 		const { password: _, ...userWithoutPassword } = user.toObject();
 		res.status(200).json({
