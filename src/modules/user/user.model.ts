@@ -40,7 +40,7 @@ const userSchema = new Schema<UserType>(
 		},
 		role: {
 			type: String,
-			enum: ['student', 'teacher'],
+			enum: ['student', 'teacher', 'superadmin'],
 			required: [true, 'Role is required'],
 		},
 		password: {
@@ -62,7 +62,6 @@ const userSchema = new Schema<UserType>(
 		isActive: {
 			type: Boolean,
 			default: true,
-			select: false,
 		},
 		passwordResetToken: String,
 		passwordResetExpires: Date,
@@ -73,7 +72,20 @@ const userSchema = new Schema<UserType>(
 	},
 );
 
-userSchema.pre(/^find/, function (this: Query<any, UserType>) {
+userSchema.pre(/^find/, function (this: any) {
+	// If includeInactive is explicitly passed in conditions, skip the filter
+	if (this.getFilter().includeInactive) {
+		const filter = this.getFilter();
+		delete filter.includeInactive;
+		this.setQuery(filter);
+		return;
+	}
+
+	// Skip filtering for update and delete operations to allow re-enabling/managing inactive users
+	if (this.op === 'findOneAndUpdate' || this.op === 'findOneAndDelete') {
+		return;
+	}
+
 	this.find({ isActive: { $ne: false } });
 });
 

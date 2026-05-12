@@ -157,7 +157,7 @@ export const protect = catchAsync(
 );
 
 export const restrictTo = (roles: string[]) => {
-	return (req: AuthRequest, res: Response, next: NextFunction) => {
+	return (req: any, res: Response, next: NextFunction) => {
 		if (!req.user || !roles.includes(req.user?.role))
 			return next(
 				new AppError('you do not have permission to perform this action', 403),
@@ -231,9 +231,13 @@ export const updatePassword = catchAsync(
 		}
 
 		// check password confirm is same to the database password
-		if (!(await user.correctPassword(currentPassword, user.password))) {
-			return next(new AppError('Invalid current password', 400));
+		// SKIP currentPassword check if user is superadmin (as requested: "he can also change his own password without any verification or entering prevous password")
+		if (req.user.role !== 'superadmin') {
+			if (!(await user.correctPassword(currentPassword, user.password))) {
+				return next(new AppError('Invalid current password', 400));
+			}
 		}
+
 		user.password = newPassword;
 		user.passwordConfirm = passwordConfirm;
 		await user.save();
@@ -243,6 +247,32 @@ export const updatePassword = catchAsync(
 			status: 'success',
 			message: 'Password changed successfully',
 			token,
+		});
+	},
+);
+
+export const updatePasswordByAdmin = catchAsync(
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { userId, newPassword, passwordConfirm } = req.body;
+
+		if (newPassword !== passwordConfirm) {
+			return next(
+				new AppError('New password and password confirm are not the same', 400),
+			);
+		}
+
+		const user = await User.findById(userId);
+		if (!user) {
+			return next(new AppError('User not found', 404));
+		}
+
+		user.password = newPassword;
+		user.passwordConfirm = passwordConfirm;
+		await user.save();
+
+		res.status(200).json({
+			status: 'success',
+			message: 'Password updated successfully by admin',
 		});
 	},
 );

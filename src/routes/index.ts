@@ -3,6 +3,7 @@ import SurveyRoute from '@/modules/survey/survey.routes';
 import ResponseRoute from '@/modules/response/response.routes';
 import UserRouter from '@/modules/user/user.routes';
 import AuthRouter from '@/modules/user/auth.routes';
+import AdminRouter from '@/modules/admin/admin.routes';
 import passport from 'passport';
 const router = Router();
 
@@ -19,7 +20,8 @@ router.get(
 
 router.use('/survey', SurveyRoute);
 router.use('/response', ResponseRoute);
-// router.use('/user', UserRouter);
+router.use('/users', UserRouter);
 router.use('/user', AuthRouter);
+router.use('/admin', AdminRouter);
 
 export default router;

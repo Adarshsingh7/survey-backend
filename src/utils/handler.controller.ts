@@ -77,9 +77,13 @@ export const getOne = (Model: MongooseModel<any>, popOptions?: any) =>
 		});
 	});
 
-export const getAll = (Model: MongooseModel<any>) =>
+export const getAll = (Model: MongooseModel<any>, popOptions?: any) =>
 	catchAsync(async (req: Request, res: Response) => {
-		const features = new APIFeatures(Model.find(), req.query)
+		let query = Model.find();
+		if (popOptions) {
+			query = query.populate(popOptions);
+		}
+		const features = new APIFeatures(query, req.query)
 			.filter()
 			.sort()
 			.limitFields()

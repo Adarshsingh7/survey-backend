@@ -8,7 +8,7 @@ import {
 } from '@/utils/handler.controller';
 
 export const getSurvey = getOne(SurveyModel);
-export const getAllSurveys = getAll(SurveyModel);
+export const getAllSurveys = getAll(SurveyModel, 'user');
 export const createSurvey = createOne(SurveyModel);
 export const updateSurvey = updateOne(SurveyModel);
 export const deleteSurvey = deleteOne(SurveyModel);
